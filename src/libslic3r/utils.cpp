@@ -417,7 +417,7 @@ std::error_code rename_file(const std::string &from, const std::string &to)
 #endif
 }
 
-CopyFileResult copy_file_inner(const std::string& from, const std::string& to)
+CopyFileResult copy_file_inner(const std::string& from, const std::string& to, boost::system::error_code &error_code)
 {
 	const boost::filesystem::path source(from);
 	const boost::filesystem::path target(to);
@@ -429,20 +429,19 @@ CopyFileResult copy_file_inner(const std::string& from, const std::string& to)
 	// the copy_file() function will fail appropriately and we don't want the permission()
 	// calls to cause needless failures on permissionless filesystems (ie. FATs on SD cards etc.)
 	// or when the target file doesn't exist.
-	boost::system::error_code ec;
-	boost::filesystem::permissions(target, perms, ec);
-	boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists, ec);
-	if (ec) {
+	boost::filesystem::permissions(target, perms, error_code);
+	boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists);
+	if (error_code) {
 		return FAIL_COPY_FILE;
 	}
-	boost::filesystem::permissions(target, perms, ec);
+	boost::filesystem::permissions(target, perms, error_code);
 	return SUCCESS;
 }
 
-CopyFileResult copy_file(const std::string &from, const std::string &to, const bool with_check)
+CopyFileResult copy_file(const std::string &from, const std::string &to, boost::system::error_code &error_code, const bool with_check)
 {
 	std::string to_temp = to + ".tmp";
-	CopyFileResult ret_val = copy_file_inner(from,to_temp);
+	CopyFileResult ret_val = copy_file_inner(from, to_temp, error_code);
     if(ret_val == SUCCESS)
 	{
         if (with_check)
